@@ -1,0 +1,159 @@
+name: Sync Helm charts from source repo releases
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
+
+permissions:
+  contents: write # need write permission to push chart files + index
+
+env:
+  SOURCE_REPO: "freiheit-com/kuberpult"
+  CHARTS_DIR: "charts"
+  TARGET_BRANCH: "gh-pages"
+  PAGES_URL: "https://jonas-budde.github.io/kuberpult-helm-repository"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ ENV.TARGET_BRANCH }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install prerequisites (jq, curl, git)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq git curl
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Fetch releases list from source repo
+        run: |
+          set -euo pipefail
+          # list releases (latest first)
+          releases_json=$(curl -s "https://api.github.com/repos/${SOURCE_REPO}/releases")
+          echo "$releases_json" | jq 'map(select(.draft == false and .prerelease == false))' > /tmp/releases.json
+          jq -r '.[0:10] | .[] | "\(.tag_name) (prerelease=\(.prerelease) draft=\(.draft))"' /tmp/releases.json
+
+      - name: Download release .tgz assets -> charts/ and update index.yaml
+        run: |
+          set -euo pipefail
+
+          mkdir -p charts
+
+          # helper to download with auth
+          download_asset() {
+            local url="$1"
+            local out="$2"
+            curl -sS -L -H "Accept: application/octet-stream" -o "${out}" "${url}"
+          }
+
+          # read assets (only .tgz) from the previously-created /tmp/releases.json
+          if [ ! -f /tmp/releases.json ]; then
+            echo "/tmp/releases.json not found - make sure the 'Fetch releases list' step created it"
+            exit 1
+          fi
+
+          echo "Listing .tgz assets from releases JSON..."
+          # produce lines: "<url> <name>"
+          jq -r '.[] | .assets[]? | select(.name | test("\\.tgz$")) | "\(.browser_download_url) \(.name)"' /tmp/releases.json > /tmp/assets.list || true
+
+          if [ ! -s /tmp/assets.list ]; then
+            echo "No .tgz assets found in the scanned releases."
+          else
+            echo "Downloading assets to charts/ (skipping already-present files)..."
+            while IFS= read -r line; do
+              url=$(printf '%s' "$line" | awk '{print $1}')
+              # asset names may contain spaces (rare), so extract name from JSON instead:
+              name=$(printf '%s' "$line" | sed -E 's/^[^ ]+ //')
+              # sanitize name (basic)
+              name=$(basename "$name")
+              out="charts/${name}"
+              if [ -f "${out}" ]; then
+                echo "skip: ${name} (already present)"
+              else
+                echo "download: ${name}"
+                download_asset "${url}" "${out}" || { echo "FAILED to download ${url}"; exit 1; }
+                # quick sanity: ensure file is non-empty
+                if [ ! -s "${out}" ]; then
+                  echo "Downloaded file is empty: ${out}" >&2
+                  rm -f "${out}"
+                  exit 1
+                fi
+              fi
+            done < /tmp/assets.list
+          fi
+
+      - name: Update Helm Index
+        run: |
+          set -euo pipefail
+          if [ -f index.yaml ]; then
+            echo "Found existing root index.yaml — sanity checking..."
+            if grep -q '^apiVersion:' index.yaml && grep -q '^entries:' index.yaml && ! grep -q '<html\|<head' index.yaml; then
+              echo "existing index.yaml looks valid — attempting merge."
+              # helm generates charts/index.yaml; we merge into that
+              if helm repo index charts --url "${PAGES_URL}" --merge index.yaml; then
+                echo "Merge succeeded — copying charts/index.yaml -> ./index.yaml"
+                mv charts/index.yaml index.yaml
+              else
+                echo "helm --merge failed; showing preview of existing index (first 200 lines):"
+                head -n 200 index.yaml || true
+                echo "Generating fresh index instead."
+                rm -f index.yaml
+                helm repo index charts --url "${PAGES_URL}"
+                mv charts/index.yaml index.yaml
+              fi
+            else
+              echo "existing index.yaml failed basic sanity checks — generating fresh index."
+              echo "Preview of bad index (first 200 lines):"
+              head -n 200 index.yaml || true
+              rm -f index.yaml
+              helm repo index charts --url "${PAGES_URL}"
+              mv charts/index.yaml index.yaml
+            fi
+          else
+            echo "No root index.yaml found — generating fresh index."
+            helm repo index charts --url "${PAGES_URL}"
+            mv charts/index.yaml index.yaml
+          fi
+
+          # Ensure index.yaml is not empty and contains apiVersion
+          if [ ! -s index.yaml ] || ! grep -q '^apiVersion:' index.yaml; then
+            echo "index.yaml looks invalid after generation. Showing head:"
+            head -n 200 index.yaml || true
+            exit 1
+          fi
+
+      - name: Add, commit & push changes if any
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Stage changes
+          git add -A charts index.yaml || true
+
+          # Only commit if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit (charts/index.yaml/index.yaml unchanged)."
+          else
+            git commit -m "chore(sync): update charts from ${SOURCE_REPO} ($(date -u +'%Y-%m-%dT%H:%M:%SZ'))"
+
+            # Push using token-authenticated remote to avoid interactive prompt
+            # Use GITHUB_TOKEN (must be present in env). Hide token in logs by using remote URL but avoid printing it.
+            remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            # Push current HEAD to gh-pages branch
+            echo "Pushing changes to gh-pages..."
+            git push --set-upstream "${remote_url}" HEAD:gh-pages
+            echo "Push complete."
+          fi
