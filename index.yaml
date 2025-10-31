@@ -2,8 +2,44 @@ apiVersion: v1
 entries:
   kuberpult:
   - apiVersion: v2
+    appVersion: v13.35.3
+    created: "2025-10-31T01:49:28.50158233Z"
+    dependencies:
+    - condition: auth.dexAuth.installDex
+      name: dex
+      repository: https://charts.dexidp.io
+      version: 0.17.1
+    description: freiheit.com contiuous delivery
+    digest: 28c2603870c83853ff865b289f50dff098d973aa0a6c57325f9a4a452cb4a6c0
+    maintainers:
+    - name: hannesg
+    - name: sven-urbanski-freiheit-com
+    name: kuberpult
+    type: application
+    urls:
+    - https://jonas-budde.github.io/kuberpult-helm-repository/kuberpult-v13.35.3.tgz
+    version: v13.35.3
+  - apiVersion: v2
+    appVersion: v13.35.2
+    created: "2025-10-31T01:49:28.498445865Z"
+    dependencies:
+    - condition: auth.dexAuth.installDex
+      name: dex
+      repository: https://charts.dexidp.io
+      version: 0.17.1
+    description: freiheit.com contiuous delivery
+    digest: 4f9695629e37986b2826e3b578d9e89472aca0fd28aaa84bc95ce23c51adc790
+    maintainers:
+    - name: hannesg
+    - name: sven-urbanski-freiheit-com
+    name: kuberpult
+    type: application
+    urls:
+    - https://jonas-budde.github.io/kuberpult-helm-repository/kuberpult-v13.35.2.tgz
+    version: v13.35.2
+  - apiVersion: v2
     appVersion: v13.33.5
-    created: "2025-10-30T01:53:09.605099321Z"
+    created: "2025-10-31T01:49:28.495599633Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -21,7 +57,7 @@ entries:
     version: v13.33.5
   - apiVersion: v2
     appVersion: v13.33.4
-    created: "2025-10-30T01:53:09.602238899Z"
+    created: "2025-10-31T01:49:28.491407539Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -39,7 +75,7 @@ entries:
     version: v13.33.4
   - apiVersion: v2
     appVersion: v13.33.1
-    created: "2025-10-30T01:53:09.598272166Z"
+    created: "2025-10-31T01:49:28.488601011Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -57,7 +93,7 @@ entries:
     version: v13.33.1
   - apiVersion: v2
     appVersion: v13.32.0
-    created: "2025-10-30T01:53:09.595499679Z"
+    created: "2025-10-31T01:49:28.485053726Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -75,7 +111,7 @@ entries:
     version: v13.32.0
   - apiVersion: v2
     appVersion: v13.31.1
-    created: "2025-10-30T01:53:09.59258232Z"
+    created: "2025-10-31T01:49:28.482346183Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -93,7 +129,7 @@ entries:
     version: v13.31.1
   - apiVersion: v2
     appVersion: v13.31.0
-    created: "2025-10-30T01:53:09.588770584Z"
+    created: "2025-10-31T01:49:28.479559603Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -111,7 +147,7 @@ entries:
     version: v13.31.0
   - apiVersion: v2
     appVersion: v13.26.1
-    created: "2025-10-30T01:53:09.585885887Z"
+    created: "2025-10-31T01:49:28.475892012Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -129,7 +165,7 @@ entries:
     version: v13.26.1
   - apiVersion: v2
     appVersion: v13.24.0
-    created: "2025-10-30T01:53:09.582351919Z"
+    created: "2025-10-31T01:49:28.473145567Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -147,7 +183,7 @@ entries:
     version: v13.24.0
   - apiVersion: v2
     appVersion: v13.21.0
-    created: "2025-10-30T01:53:09.5795251Z"
+    created: "2025-10-31T01:49:28.469224772Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -165,7 +201,7 @@ entries:
     version: v13.21.0
   - apiVersion: v2
     appVersion: v13.20.1
-    created: "2025-10-30T01:53:09.57655392Z"
+    created: "2025-10-31T01:49:28.466318427Z"
     dependencies:
     - condition: auth.dexAuth.installDex
       name: dex
@@ -181,4 +217,4 @@ entries:
     urls:
     - https://jonas-budde.github.io/kuberpult-helm-repository/kuberpult-v13.20.1.tgz
     version: v13.20.1
-generated: "2025-10-30T01:53:09.572595129Z"
+generated: "2025-10-31T01:49:28.463104526Z"
